@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-serverAddr=argocd-sever:443
+serverAddr=${ARGOCD_SERVER}
 newPass=${ARGOCD_PASS}
 initialPass=${ARGOCD_INITIAL_PASS}
 
