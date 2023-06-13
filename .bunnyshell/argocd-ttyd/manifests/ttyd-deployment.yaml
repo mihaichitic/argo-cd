@@ -15,7 +15,7 @@ spec:
         spec:
           containers:
           - name: ttyd
-            image: {{ components.argocd-ttyd-image.image }}
+            image: argocd-ttyd-image
             command:
               - /bin/bash
             args:
