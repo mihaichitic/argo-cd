@@ -13,4 +13,4 @@ RUN curl -sSL -o /usr/local/bin/ttyd https://github.com/tsl0922/ttyd/releases/do
     && chmod +x /usr/local/bin/ttyd
 
 COPY --from=argocd /usr/local/bin/argocd /usr/local/bin/argocd
-COPY ./login.sh ./destroy.sh ./
+COPY ./login.sh ./fetch-namespaces.sh ./destroy.sh ./
