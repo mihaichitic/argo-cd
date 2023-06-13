@@ -8,5 +8,5 @@ script_dir=$(dirname "$0")
 echo 'fetching in-cluster app namespaces...'
 app_namespaces=$(argocd app list --output json | jq -r 'map(select(.spec.destination.server == "https://kubernetes.default.svc")) | .[].spec.destination.namespace')
 
-echo $app_namespaces
+echo -e "app-namespaces:\n$app_namespaces"
 
