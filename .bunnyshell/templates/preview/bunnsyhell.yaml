@@ -1,0 +1,196 @@
+kind: Environment
+name: 'ArgoCD'
+type: primary
+components:
+    -
+        kind: KubernetesManifest
+        name: argo-cd
+        gitRepo: 'https://github.com/bunnyshell/OSS-argo-cd.git'
+        gitBranch: master
+        gitApplicationPath: /
+        runnerImage: 'alpine/k8s:1.22.15'
+        deploy:
+            - 'export IMAGE_FULL_NAME="${ARGOCD_IMAGE}:${ARGOCD_TAG}"'
+            - 'echo "tweaking manifests/cluster-rbac for this instance ..."'
+            - |
+                cd manifests/cluster-rbac \
+                && kustomize edit set nameprefix {{ env.k8s.namespace }} \
+                && sed -i "s/namespace: argocd/namespace: {{ env.k8s.namespace }}/g" ./*/*-clusterrolebinding.yaml \
+                && cd -
+            - pwd
+            - 'echo "setting configs ..."'
+            - |
+                cat <<'EOF' >> ./manifests/base/config/kustomization.yaml
+                configMapGenerator:
+                - name: argocd-cmd-params-cm
+                  behavior: merge
+                  literals:
+                    - server.insecure="false"
+                EOF
+            - pwd
+            - 'echo "tweaking hack/update-manifests.sh to update image ..."'
+            - 'sed -i "s#\${IMAGE_NAMESPACE}/argocd:\${IMAGE_TAG}#\${IMAGE_FULL_NAME}#g" ./hack/update-manifests.sh'
+            - 'cat hack/update-manifests.sh'
+            - 'echo "building manifests..."'
+            - 'chmod +x ./hack/update-manifests.sh && IMAGE_TAG=none ./hack/update-manifests.sh '
+            - 'kubectl apply -f ./manifests/install.yaml -n {{ env.k8s.namespace }}'
+            - |
+                cat << EOF > bns_ingress.yaml
+                    apiVersion: networking.k8s.io/v1
+                    kind: Ingress
+                    metadata:
+                        name: argocd-ingress
+                        annotations:
+                            alb.ingress.kubernetes.io/target-type: ip
+                            nginx.ingress.kubernetes.io/use-regex: 'true'
+                            nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+                            nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+                        labels:
+                            app.kubernetes.io/managed-by: Bunnyshell
+                            app.kubernetes.io/part-of: env-{{ env.unique }}
+                            app.kubernetes.io/instance-argo-cd: bns
+                    spec:
+                        ingressClassName: bns-nginx
+                        rules:
+                            -
+                                host: argocd-{{ env.base_domain }}
+                                http:
+                                    paths:
+                                        -
+                                            path: /
+                                            pathType: Prefix
+                                            backend:
+                                                service:
+                                                    name: argocd-server
+                                                    port:
+                                                        number: 443
+                        tls:
+                            - hosts:
+                                - argocd-{{ env.base_domain }}
+                              secretName: argocd-secret # do not change, this is provided by Argo CD
+                EOF
+            - 'kubectl apply -f ./bns_ingress.yaml -n {{ env.k8s.namespace }}'
+            - 'echo "waiting for initial secret ..."'
+            - 'kubectl wait deployment -n {{ env.k8s.namespace }} argocd-server --for condition=Available=True --timeout=30s'
+            - 'INITIAL_SECRET=$(kubectl -n {{ env.k8s.namespace }} get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)'
+            - 'SERVICE_ENDPOINT="https://argocd-{{ env.base_domain }}"'
+        destroy:
+            - 'echo "destroy is handled in argocd-ttyd component"'
+            - '#kubectl delete ns {{ env.k8s.namespace }}'
+        start:
+            - 'echo "start is handled in argocd-ttyd component"'
+            - '#kubectl scale --replicas=1 --namespace {{ env.k8s.namespace }} deployment --all'
+        stop:
+            - 'echo "stop is handled in argocd-ttyd component"'
+            - '#kubectl scale --replicas=0 --namespace {{ env.k8s.namespace }} deployment --all'
+        exportVariables:
+            - SERVICE_ENDPOINT
+            - INITIAL_SECRET
+        environment:
+            ARGOCD_IMAGE: quay.io/argoproj/argocd
+            ARGOCD_TAG: latest
+    -
+        kind: DockerImage
+        name: argocd-ttyd-image
+        gitRepo: 'https://github.com/bunnyshell/OSS-argo-cd.git'
+        gitBranch: master
+        gitApplicationPath: /.bunnyshell/argocd-ttyd
+        context: /.bunnyshell/argocd-ttyd
+        dockerfile: Dockerfile
+        args:
+            ARGOCD_IMAGE: quay.io/argoproj/argocd
+            ARGOCD_TAG: latest
+            TTYD_VERSION: 1.7.3
+    -
+        kind: KubernetesManifest
+        name: argocd-ttyd
+        gitRepo: 'https://github.com/bunnyshell/OSS-argo-cd.git'
+        gitBranch: master
+        gitApplicationPath: /.bunnyshell/argocd-ttyd
+        runnerImage: 'alpine/k8s:1.22.15'
+        deploy:
+            - 'cd ./.bunnyshell/argocd-ttyd/manifests'
+            - 'kustomize edit add label app.kubernetes.io/part-of:env-{{ env.unique }} app.kubernetes.io/instance-argocd-ttyd:bns'
+            - |
+                cat << EOF > ttyd-deployment-patch.json
+                    [
+                     {
+                          "op": "replace", 
+                          "path": "/spec/template/spec/containers/0/image", 
+                          "value": "{{ components.argocd-ttyd-image.image }}"
+                     }
+                    ]
+                EOF
+            - |
+                sed -i \
+                    -e "s/%ARGOCD_PASS%/$ARGOCD_PASS/g" \
+                    -e "s/%ARGOCD_INITIAL_PASS%/$ARGOCD_INITIAL_PASS/g" \
+                    -e "s/%ARGOCD_SERVER%/argocd-server.{{ env.k8s.namespace }}.svc.cluster.local:80/g" \
+                    ./ttyd-deployment.yaml
+            - |
+                cat << EOF > ttyd-ingress-patch.json
+                    [
+                     {
+                          "op": "replace", 
+                          "path": "/spec/rules/0/host", 
+                          "value": "argocd-cli-{{ env.base_domain }}"
+                     }
+                    ]
+                EOF
+            - 'kubectl apply -k . -n {{ env.k8s.namespace }}'
+        destroy:
+            - 'echo "deleting argocd apps ..."'
+            - |
+                app_namespaces=$(kubectl exec deployment/ttyd --namespace {{ env.k8s.namespace }} -- \
+                    /bin/bash -c "/fetch-namespaces.sh | grep -ozP '(?s)app-namespaces:\K.*'" \
+                )
+            - 'timeout 5m kubectl exec deployment/ttyd --namespace {{ env.k8s.namespace }} -- ./destroy.sh'
+            - |
+                for app_namespace in $app_namespaces; do
+                  echo 'deleting app namespace $app_namespace ...'
+                  kubectl delete ns $app_namespace
+                done
+            - 'echo "deleting argocd namespace ..."'
+            - 'kubectl delete ns {{ env.k8s.namespace }}'
+        start:
+            - 'echo "starting argocd instance ..."'
+            - 'kubectl scale --replicas=1 --namespace {{ env.k8s.namespace }} Deployment --all || true'
+            - 'kubectl scale --replicas=1 --namespace {{ env.k8s.namespace }} StatefulSet --all || true'
+            - 'kubectl scale --replicas=1 --namespace {{ env.k8s.namespace }} DaemonSet --all || true'
+            - 'echo "waiting for argocd instance to start ..."'
+            - 'kubectl wait deployment -n {{ env.k8s.namespace }} argocd-server --for condition=Available=True --timeout=30s'
+            - 'kubectl wait deployment -n {{ env.k8s.namespace }} ttyd --for condition=Available=True --timeout=30s'
+            - 'echo "starting argocd apps ..."'
+            - |
+                app_namespaces=$(kubectl exec deployment/ttyd --namespace {{ env.k8s.namespace }} -- \
+                    /bin/bash -c "/fetch-namespaces.sh | grep -ozP '(?s)app-namespaces:\K.*'" \
+                )
+            - |
+                for app_namespace in $app_namespaces; do
+                  echo "starting app namespace $app_namespace ..."
+                  kubectl scale --replicas=1 --namespace $app_namespace Deployment --all || true
+                  kubectl scale --replicas=1 --namespace $app_namespace StatefulSet --all || true
+                  kubectl scale --replicas=1 --namespace $app_namespace DaemonSet --all || true
+                done
+        stop:
+            - 'echo "stopping argocd apps ..."'
+            - |
+                app_namespaces=$(kubectl exec deployment/ttyd --namespace {{ env.k8s.namespace }} -- \
+                    /bin/bash -c "/fetch-namespaces.sh | grep -ozP '(?s)app-namespaces:\K.*'" \
+                )
+            - |
+                for app_namespace in $app_namespaces; do
+                  echo "stopping app namespace $app_namespace ..."
+                  kubectl scale --replicas=0 --namespace $app_namespace Deployment --all || true
+                  kubectl scale --replicas=0 --namespace $app_namespace StatefulSet --all || true
+                  kubectl scale --replicas=0 --namespace $app_namespace DaemonSet --all || true
+                done
+            - 'echo "stopping argocd instance ..."'
+            - 'kubectl scale --replicas=0 --namespace {{ env.k8s.namespace }} Deployment --all || true'
+            - 'kubectl scale --replicas=0 --namespace {{ env.k8s.namespace }} StatefulSet --all || true'
+            - 'kubectl scale --replicas=0 --namespace {{ env.k8s.namespace }} DaemonSet --all || true'
+        environment:
+            ARGOCD_INITIAL_PASS: '{{components.argo-cd.exported.INITIAL_SECRET}}'
+            ARGOCD_PASS: sent_from_gh_action
+
+
