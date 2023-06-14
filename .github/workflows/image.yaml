@@ -19,7 +19,7 @@ jobs:
   set-vars:
     permissions:
       contents: read
-    if: github.repository == 'argoproj/argo-cd'
+    if: github.repository == 'bunnyshell/argo-cd'
     runs-on: ubuntu-22.04
     outputs:
       image-tag: ${{ steps.image.outputs.tag}}
@@ -48,13 +48,15 @@ jobs:
       contents: read
       packages: write  # for pushing packages to GHCR, which is used by cd.apps.argoproj.io to avoid polluting Quay with tags
       id-token: write # for creating OIDC tokens for signing.
-    if: ${{ github.repository == 'argoproj/argo-cd' && github.event_name != 'push' }}
+    if: ${{ github.repository == 'bunnyshell/argo-cd' && github.event_name != 'push' }}
     uses: ./.github/workflows/image-reuse.yaml
     with:
+      bunnyshell_cr_image_name: 904643107945.dkr.ecr.eu-west-1.amazonaws.com/bns-v4nq2e_argoproj-argocd:${{ needs.set-vars.outputs.image-tag }}
       # Note: cannot use env variables to set go-version (https://docs.github.com/en/actions/using-workflows/reusing-workflows#limitations)
       go-version: 1.20
       platforms: ${{ needs.set-vars.outputs.platforms }}
       push: false
+      push_bunnyshell: true
 
   build-and-publish:
     needs: [set-vars]
@@ -62,7 +64,7 @@ jobs:
       contents: read
       packages: write  # for pushing packages to GHCR, which is used by cd.apps.argoproj.io to avoid polluting Quay with tags
       id-token: write # for creating OIDC tokens for signing.
-    if: ${{ github.repository == 'argoproj/argo-cd' && github.event_name == 'push' }}
+    if: ${{ github.repository == 'bunnyshell/argo-cd' && github.event_name == 'push' }}
     uses: ./.github/workflows/image-reuse.yaml
     with:
       quay_image_name: quay.io/argoproj/argocd:latest

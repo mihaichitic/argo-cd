@@ -14,11 +14,18 @@ on:
       docker_image_name:
         required: false
         type: string
+      bunnyshell_cr_image_name:
+        required: false
+        type: string
       platforms:
         required: true
         type: string
         default: linux/amd64
       push:
+        required: true
+        type: boolean
+        default: false
+      push_bunnyshell:
         required: true
         type: boolean
         default: false
@@ -38,6 +45,10 @@ on:
       docker_username:
         required: false
       docker_password:
+        required: false
+      bunnyshell_cr_username:
+        required: false
+      bunnyshell_cr_password:
         required: false
 
     outputs:
@@ -86,7 +97,8 @@ jobs:
           IMAGE_TAGS=$(for str in \
             ${{ inputs.quay_image_name }} \
             ${{ inputs.ghcr_image_name }} \
-            ${{ inputs.docker_image_name}}; do
+            ${{ inputs.docker_image_name}} \
+            ${{ inputs.bunnyshell_cr_image_name}}; do
             echo -n "${str}",;done | sed 's/,$//')
 
           echo $IMAGE_TAGS
@@ -97,7 +109,8 @@ jobs:
           TAGS=$(for tag in \
             ${{ inputs.quay_image_name }} \
             ${{ inputs.ghcr_image_name }} \
-            ${{ inputs.docker_image_name}}; do
+            ${{ inputs.docker_image_name}} \
+            ${{ inputs.bunnyshell_cr_image_name}}; do
             echo -n "${tag}" | awk -F ":" '{print $1}' -;done)
           
             echo $TAGS
@@ -128,13 +141,21 @@ jobs:
           password: ${{ secrets.docker_password }}
         if: ${{ inputs.docker_image_name && inputs.push }}
 
+      - name: Login to Bunnyshell Container Registry
+        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # v2.1.0
+        with:
+          registry: 904643107945.dkr.ecr.eu-west-1.amazonaws.com
+          username: ${{ secrets.bunnyshell_cr_username }}
+          password: ${{ secrets.bunnyshell_cr_password }}
+        if: ${{ inputs.bunnyshell_cr_image_name && inputs.push_bunnyshell }}
+
       - name: Build and push container image
         id: image
         uses: docker/build-push-action@2eb1c1961a95fc15694676618e422e8ba1d63825 #v4.1.1
         with:
           context: .
           platforms: ${{ inputs.platforms }}
-          push: ${{ inputs.push }}
+          push: ${{ inputs.push || inputs.push_bunnyshell }}
           tags: ${{ env.TAGS }}
           target: ${{ inputs.target }}
           provenance: false
