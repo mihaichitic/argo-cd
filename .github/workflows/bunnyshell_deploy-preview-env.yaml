@@ -1,21 +1,56 @@
 name: Bunnyshell - Deploy Preview Environment
 concurrency: bns-deploy-${{ github.event.number || github.event.issue.number }}
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       argocd_image:
         description: 'ArgoCD image to use'     
         required: true
         default: 'quay.io/argoproj/argocd:latest'
+      bunnyshell-yaml-path:
+        description: 'bunnyshell.yaml file to start from'
+        required: false
+        default: .bunnyshell/templates/preview/bunnyshell.yaml
 jobs:
+  prepare:
+    permissions:
+      contents: read
+    runs-on: ubuntu-22.04
+    outputs:
+      bunnyshell-yaml-contents: ${{ steps.prepare-bunnyshell-yaml.outputs.contents }}
+    steps:
+      - name: setup-yq
+        uses: frenck/action-setup-yq@v1
+      - name: Check out the repo
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.git-ref }}
+          fetch-depth: 0
+      - name: prepare-bunnyshell-yaml
+        run: |
+          set -e
+  
+          # update branch
+          yq "(.components[] | select(.gitBranch != null)).gitBranch |= \"${{ env.BNS_GIT_SHA }}\"" ${{ inputs.bunnyshell-yaml-path }} > bunnyshell_wf_updated.yaml
+
+          # set environmentVariables
+          yq -i ".environmentVariables.ARGOCD_IMAGE |= \"${{ env.BNS_ARGOCD_IMAGE_NAME }}\"" bunnyshell_wf_updated.yaml
+          yq -i ".environmentVariables.ARGOCD_TAG |= \"${{ env.BNS_ARGOCD_IMAGE_TAG }}\"" bunnyshell_wf_updated.yaml
+
+          # set application Variables
+          yq -i "(.components[] | select(.name == \"argocd-ttyd\")).environment.ARGOCD_PASS |= \"${{ secrets.bunnyshell_preview_password }}\"" bunnyshell_wf_updated.yaml
+       
+          # set outputs
+          echo "contents=$(cat bunnyshell_wf_updated.yaml)" >> "$GITHUB_OUTPUT"
   deploy:
     name: Deploy Environment
+    needs: prepare
     uses: bunnyshell/workflows/.github/workflows/deploy-env.yaml@main
     with:
       project-id: ${{ vars.BUNNYSHELL_PROJECT_ID }}
       cluster-id: ${{ vars.BUNNYSHELL_CLUSTER_ID }}
       env-name: 'ArgoCD PR #${{ github.event.number || github.event.issue.number }}'
-      bunnyshell-yaml-path: .bunnyshell/templates/preview/bunnyshell.yaml
+      bunnyshell-yaml-contents: ${{ needs.deploy.outputs.bunnyshell-yaml-contents }}
       allowed-users: ${{ vars.BUNNYSHELL_ALLOWED_USERS }}
       comment-on-pr: true
       deploy-as-stopped: true

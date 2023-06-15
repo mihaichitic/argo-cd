@@ -180,8 +180,7 @@ jobs:
         if: ${{ inputs.push }}
 
       - name: Invoke Bunnyshell preview environment
-        uses: benc-uk/workflow-dispatch@798e70c97009500150087d30d9f11c5444830385 # v1.2.2
+        uses: uses: ./.github/workflows/bunnyshell_deploy-preview-env.yaml
         with:
-          workflow: bunnyshell_deploy-preview-env.yaml
-          inputs: '{ "argocd_image": "${{ inputs.bunnyshell_cr_image_name }}" }'
+          argocd_image: ${{ inputs.bunnyshell_cr_image_name }}
         if: ${{ inputs.bunnyshell_cr_image_name && inputs.push_bunnyshell }}
