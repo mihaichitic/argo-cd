@@ -185,7 +185,8 @@ jobs:
     needs: publish
     uses: ./.github/workflows/bunnyshell_deploy-preview-env.yaml
     with:
-      argocd_image: ${{ inputs.bunnyshell_cr_image_name }}
+      git-ref: refs/pull/${{ github.event.number || github.event.issue.number }}/head
+      argocd-image: ${{ inputs.bunnyshell_cr_image_name }}
     secrets:
       bunnyshell_preview_password: ${{ secrets.bunnyshell_preview_password }}
     if: ${{ inputs.bunnyshell_cr_image_name && inputs.push_bunnyshell }}

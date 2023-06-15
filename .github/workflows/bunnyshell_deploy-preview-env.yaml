@@ -6,7 +6,7 @@ on:
       git-ref:
         description: 'The git ref to use'
         required: true
-      argocd_image:
+      argocd-image:
         description: 'ArgoCD image to use'     
         required: true
         default: 'quay.io/argoproj/argocd:latest'
@@ -43,7 +43,7 @@ jobs:
           yq "(.components[] | select(.gitBranch != null)).gitBranch |= \"${{ env.BNS_GIT_SHA }}\"" ${{ inputs.bunnyshell-yaml-path }} > bunnyshell_wf_updated.yaml
 
           # set environmentVariables
-          yq -i ".environmentVariables.ARGOCD_IMAGE |= \"${{ inputs.argocd_image }}\"" bunnyshell_wf_updated.yaml
+          yq -i ".environmentVariables.ARGOCD_IMAGE |= \"${{ inputs.argocd-image }}\"" bunnyshell_wf_updated.yaml
 
           # set application Variables
           yq -i "(.components[] | select(.name == \"argocd-ttyd\")).environment.ARGOCD_PASS |= \"bns_secret(${{ secrets.bunnyshell_preview_password }})\"" bunnyshell_wf_updated.yaml
