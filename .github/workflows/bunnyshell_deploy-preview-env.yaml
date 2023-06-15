@@ -87,5 +87,5 @@ jobs:
     steps:
       - env:
           OUTPUT1: ${{needs.prepare.outputs.contents}}
-          OUTPUT2: ${{needs.job1.outputs.bunnyshell-yaml-contents}}
+          OUTPUT2: ${{needs.prepare.outputs.bunnyshell-yaml-contents}}
         run: echo "${{ env.OUTPUT1}} + ${{ env.$OUTPUT2 }}"
