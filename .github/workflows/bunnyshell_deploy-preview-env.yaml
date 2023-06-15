@@ -20,6 +20,10 @@ on:
     secrets:
       bunnyshell_preview_password:
         required: true
+      bunnyshell_access_token:
+        required: false
+      bunnyshell_app_private_key:
+        required: false
 jobs:
   prepare:
     permissions:
