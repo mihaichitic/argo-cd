@@ -183,7 +183,7 @@ jobs:
 
   bunnyshell:
     permissions:
-      contents: read
+      pull-requests: write
     needs: publish
     uses: ./.github/workflows/bunnyshell_deploy-preview-env.yaml
     with:
