@@ -1,11 +1,14 @@
 kind: Environment
 name: 'ArgoCD'
 type: primary
+environmentVariables:
+    ARGOCD_IMAGE: quay.io/argoproj/argocd
+    ARGOCD_TAG: latest
 components:
     -
         kind: KubernetesManifest
-        name: argo-cd
-        gitRepo: 'https://github.com/bunnyshell/OSS-argo-cd.git'
+        name: argocd
+        gitRepo: 'https://github.com/bunnyshell/argo-cd.git'
         gitBranch: master
         gitApplicationPath: /
         runnerImage: 'alpine/k8s:1.22.15'
@@ -57,7 +60,7 @@ components:
                         labels:
                             app.kubernetes.io/managed-by: Bunnyshell
                             app.kubernetes.io/part-of: env-{{ env.unique }}
-                            app.kubernetes.io/instance-argo-cd: bns
+                            app.kubernetes.io/instance-argocd: bns
                     spec:
                         ingressClassName: bns-nginx
                         rules:
@@ -99,24 +102,24 @@ components:
         exportVariables:
             - INITIAL_SECRET
         environment:
-            ARGOCD_IMAGE: quay.io/argoproj/argocd
-            ARGOCD_TAG: latest
+            ARGOCD_IMAGE: '{{ env.vars.ARGOCD_IMAGE }}'
+            ARGOCD_TAG: '{{ env.vars.ARGOCD_TAG }}'
     -
         kind: DockerImage
         name: argocd-ttyd-image
-        gitRepo: 'https://github.com/bunnyshell/OSS-argo-cd.git'
+        gitRepo: 'https://github.com/bunnyshell/argo-cd.git'
         gitBranch: master
         gitApplicationPath: /.bunnyshell/argocd-ttyd
         context: /.bunnyshell/argocd-ttyd
         dockerfile: Dockerfile
         args:
-            ARGOCD_IMAGE: quay.io/argoproj/argocd
-            ARGOCD_TAG: latest
+            ARGOCD_IMAGE: '{{ env.vars.ARGOCD_IMAGE }}'
+            ARGOCD_TAG: '{{ env.vars.ARGOCD_TAG }}'
             TTYD_VERSION: 1.7.3
     -
         kind: KubernetesManifest
-        name: argocd-ttyd-2
-        gitRepo: 'https://github.com/bunnyshell/OSS-argo-cd.git'
+        name: argocd-ttyd
+        gitRepo: 'https://github.com/bunnyshell/argo-cd.git'
         gitBranch: master
         gitApplicationPath: /.bunnyshell/argocd-ttyd
         runnerImage: 'alpine/k8s:1.22.15'
@@ -214,6 +217,6 @@ components:
                 && kubectl scale --replicas=0 --namespace {{ env.k8s.namespace }} StatefulSet --all || true \
                 && kubectl scale --replicas=0 --namespace {{ env.k8s.namespace }} DaemonSet --all || true
         environment:
-            ARGOCD_INITIAL_PASS: '{{components.argo-cd.exported.INITIAL_SECRET}}'
-            ARGOCD_PASS: sent_from_gh_action
+            ARGOCD_INITIAL_PASS: '{{components.argocd.exported.INITIAL_SECRET}}'
+            ARGOCD_PASS: '{{ ("bns" ~ random() ~ "now"|date("Uv") ~ random())|slice(0,32) }}'
 
