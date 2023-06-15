@@ -48,6 +48,7 @@ jobs:
       contents: read
       packages: write  # for pushing packages to GHCR, which is used by cd.apps.argoproj.io to avoid polluting Quay with tags
       id-token: write # for creating OIDC tokens for signing.
+      pull-requests: write # for Bunnyshell preview environment
     if: ${{ github.repository == 'bunnyshell/argo-cd' && github.event_name != 'push' }}
     uses: ./.github/workflows/image-reuse.yaml
     with:
