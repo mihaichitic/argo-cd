@@ -38,7 +38,8 @@ jobs:
       - name: Prepare vars
         run: |
           echo "BNS_GIT_SHA=`git rev-parse --short HEAD`" >> "$GITHUB_ENV"
-      - name: prepare-bunnyshell-yaml
+      - name: Prepare bunnyshell.yaml
+        id: prepare-bunnyshell-yaml
         run: |
           set -e
   
