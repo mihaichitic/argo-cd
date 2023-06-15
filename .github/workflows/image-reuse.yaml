@@ -144,8 +144,8 @@ jobs:
       - name: Configure Bunnyshell AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2.0.0 # v2.2.0
         with:
-          aws-access-key-id: ${{ secrets.bunnyshell_cr_username }}
-          aws-secret-access-key: ${{ secrets.bunnyshell_cr_password }}
+          aws-access-key-id: secrets.bunnyshell_cr_username
+          aws-secret-access-key: secrets.bunnyshell_cr_password
           aws-region: eu-west-1
         if: ${{ inputs.bunnyshell_cr_image_name && inputs.push_bunnyshell }}
 
