@@ -180,7 +180,7 @@ jobs:
         if: ${{ inputs.push }}
 
       - name: Invoke Bunnyshell preview environment
-        uses: uses: ./.github/workflows/bunnyshell_deploy-preview-env.yaml
+        uses: ./.github/workflows/bunnyshell_deploy-preview-env.yaml
         with:
           argocd_image: ${{ inputs.bunnyshell_cr_image_name }}
         if: ${{ inputs.bunnyshell_cr_image_name && inputs.push_bunnyshell }}
