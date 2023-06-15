@@ -168,6 +168,7 @@ jobs:
           target: ${{ inputs.target }}
           provenance: false
           sbom: false
+        if: ${{ inputs.push }} #todo remove this line, is for rapid testing only
  
       - name: Sign container images
         run: |
