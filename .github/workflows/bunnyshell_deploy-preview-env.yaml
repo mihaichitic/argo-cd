@@ -8,11 +8,13 @@ on:
         type: string
         required: true
       argocd-image:
-        description: 'ArgoCD image to use'     
+        description: 'ArgoCD image to use'
+        type: string     
         required: true
         default: 'quay.io/argoproj/argocd:latest'
       bunnyshell-yaml-path:
         description: 'bunnyshell.yaml file to start from'
+        type: string
         required: false
         default: .bunnyshell/templates/preview/bunnyshell.yaml
     secrets:
