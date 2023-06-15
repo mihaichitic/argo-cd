@@ -2,8 +2,7 @@ kind: Environment
 name: 'ArgoCD'
 type: primary
 environmentVariables:
-    ARGOCD_IMAGE: quay.io/argoproj/argocd
-    ARGOCD_TAG: latest
+    ARGOCD_IMAGE: 'quay.io/argoproj/argocd:latest'
 components:
     -
         kind: KubernetesManifest
@@ -13,7 +12,7 @@ components:
         gitApplicationPath: /
         runnerImage: 'alpine/k8s:1.22.15'
         deploy:
-            - 'export IMAGE_FULL_NAME="${ARGOCD_IMAGE}:${ARGOCD_TAG}"'
+            - 'export IMAGE_FULL_NAME="${ARGOCD_IMAGE}"'
             - |
                 echo "tweaking manifests/cluster-rbac for this instance ..." \
                 && cd manifests/cluster-rbac \
@@ -103,7 +102,6 @@ components:
             - INITIAL_SECRET
         environment:
             ARGOCD_IMAGE: '{{ env.vars.ARGOCD_IMAGE }}'
-            ARGOCD_TAG: '{{ env.vars.ARGOCD_TAG }}'
     -
         kind: DockerImage
         name: argocd-ttyd-image
@@ -114,7 +112,6 @@ components:
         dockerfile: Dockerfile
         args:
             ARGOCD_IMAGE: '{{ env.vars.ARGOCD_IMAGE }}'
-            ARGOCD_TAG: '{{ env.vars.ARGOCD_TAG }}'
             TTYD_VERSION: 1.7.3
     -
         kind: KubernetesManifest
