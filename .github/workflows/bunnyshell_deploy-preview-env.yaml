@@ -27,6 +27,7 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       bunnyshell-yaml-contents: ${{ steps.prepare-bunnyshell-yaml.outputs.contents }}
+      mihai: ${{ steps.prepare-bunnyshell-yaml.outputs.mihai }}
     steps:
       - name: setup-yq
         uses: frenck/action-setup-yq@v1
@@ -58,6 +59,8 @@ jobs:
           cat bunnyshell_wf_updated.yaml >> "$GITHUB_OUTPUT"
           echo "$EOF" >> "$GITHUB_OUTPUT"
 
+          echo "mihai=hello mihai" >> "$GITHUB_OUTPUT"
+
           cat $GITHUB_OUTPUT;
   deploy:
     permissions:
@@ -88,4 +91,5 @@ jobs:
       - env:
           OUTPUT1: ${{needs.prepare.outputs.contents}}
           OUTPUT2: ${{needs.prepare.outputs.bunnyshell-yaml-contents}}
-        run: echo "${{ env.OUTPUT1}} + ${{ env.OUTPUT2 }}"
+          OUTPUT3: ${{needs.prepare.outputs.mihai}}
+        run: echo "${{ env.OUTPUT1}} + ${{ env.OUTPUT2 }} + ${{ env.OUTPUT3 }}"
