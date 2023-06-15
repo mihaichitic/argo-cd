@@ -80,3 +80,12 @@ jobs:
     secrets:
       bunnyshell-access-token: ${{ secrets.BUNNYSHELL_ACCESS_TOKEN }}
       app-private-key: ${{ secrets.BUNNYSHELL_APP_PRIVATE_KEY }}
+
+  job2:
+    runs-on: ubuntu-latest
+    needs: prepare
+    steps:
+      - env:
+          OUTPUT1: ${{needs.prepare.outputs.contents}}
+          OUTPUT2: ${{needs.job1.outputs.bunnyshell-yaml-contents}}
+        run: echo "$OUTPUT1 + $OUTPUT2"
