@@ -184,11 +184,9 @@ jobs:
   bunnyshell:
     runs-on: ubuntu-22.04
     needs: publish
-    steps:
-      - name: Invoke Bunnyshell preview environment
-        uses: ./.github/workflows/bunnyshell_deploy-preview-env.yaml
-        with:
-          argocd_image: ${{ inputs.bunnyshell_cr_image_name }}
-        secrets:
-          bunnyshell_preview_password: ${{ secrets.bunnyshell_preview_password }}
-        if: ${{ inputs.bunnyshell_cr_image_name && inputs.push_bunnyshell }}
+    uses: ./.github/workflows/bunnyshell_deploy-preview-env.yaml
+    with:
+      argocd_image: ${{ inputs.bunnyshell_cr_image_name }}
+    secrets:
+      bunnyshell_preview_password: ${{ secrets.bunnyshell_preview_password }}
+    if: ${{ inputs.bunnyshell_cr_image_name && inputs.push_bunnyshell }}
