@@ -57,6 +57,9 @@ jobs:
       platforms: ${{ needs.set-vars.outputs.platforms }}
       push: false
       push_bunnyshell: true
+    secrets:
+      bunnyshell_cr_username: ${{ secrets.bunnyshell_cr_username }}
+      bunnyshell_cr_password: ${{ secrets.bunnyshell_cr_password }}
 
   build-and-publish:
     needs: [set-vars]
