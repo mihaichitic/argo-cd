@@ -5,6 +5,7 @@ on:
     inputs:
       git-ref:
         description: 'The git ref to use'
+        type: string
         required: true
       argocd-image:
         description: 'ArgoCD image to use'     
