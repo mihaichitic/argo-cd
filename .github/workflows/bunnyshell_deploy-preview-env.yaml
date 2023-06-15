@@ -20,6 +20,10 @@ on:
     secrets:
       bunnyshell_preview_password:
         required: true
+      bunnyshell_access_token:
+        required: true
+      bunnyshell_app_private_key:
+        required: true
 jobs:
   prepare:
     permissions:
@@ -81,8 +85,8 @@ jobs:
           .bunnyshell/*
       use-app-token: true
     secrets:
-      bunnyshell-access-token: ${{ secrets.BUNNYSHELL_ACCESS_TOKEN }}
-      app-private-key: ${{ secrets.BUNNYSHELL_APP_PRIVATE_KEY }}
+      bunnyshell-access-token: ${{ secrets.bunnyshell_access_token }}
+      app-private-key: ${{ secrets.bunnyshell_app_private_key }}
 
   job2:
     runs-on: ubuntu-latest
