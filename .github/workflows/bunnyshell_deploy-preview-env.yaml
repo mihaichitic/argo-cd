@@ -53,7 +53,7 @@ jobs:
        
           # set outputs
           EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
-          echo "contents<<$EOF" >> "GITHUB_OUTPUT"
+          echo "contents<<$EOF" >> "$GITHUB_OUTPUT"
           cat bunnyshell_wf_updated.yaml >> "$GITHUB_OUTPUT"
           echo "$EOF" >> "$GITHUB_OUTPUT"
   deploy:
