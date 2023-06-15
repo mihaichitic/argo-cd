@@ -3,6 +3,9 @@ concurrency: bns-deploy-${{ github.event.number || github.event.issue.number }}
 on:
   workflow_call:
     inputs:
+      git-ref:
+        description: 'The git ref to use'
+        required: true
       argocd_image:
         description: 'ArgoCD image to use'     
         required: true
@@ -11,6 +14,9 @@ on:
         description: 'bunnyshell.yaml file to start from'
         required: false
         default: .bunnyshell/templates/preview/bunnyshell.yaml
+    secrets:
+      bunnyshell_preview_password:
+        required: true
 jobs:
   prepare:
     permissions:
@@ -26,6 +32,9 @@ jobs:
         with:
           ref: ${{ inputs.git-ref }}
           fetch-depth: 0
+      - name: Prepare vars
+        run: |
+          echo "BNS_GIT_SHA=`git rev-parse --short HEAD`" >> "$GITHUB_ENV"
       - name: prepare-bunnyshell-yaml
         run: |
           set -e
@@ -34,11 +43,10 @@ jobs:
           yq "(.components[] | select(.gitBranch != null)).gitBranch |= \"${{ env.BNS_GIT_SHA }}\"" ${{ inputs.bunnyshell-yaml-path }} > bunnyshell_wf_updated.yaml
 
           # set environmentVariables
-          yq -i ".environmentVariables.ARGOCD_IMAGE |= \"${{ env.BNS_ARGOCD_IMAGE_NAME }}\"" bunnyshell_wf_updated.yaml
-          yq -i ".environmentVariables.ARGOCD_TAG |= \"${{ env.BNS_ARGOCD_IMAGE_TAG }}\"" bunnyshell_wf_updated.yaml
+          yq -i ".environmentVariables.ARGOCD_IMAGE |= \"${{ inputs.argocd_image }}\"" bunnyshell_wf_updated.yaml
 
           # set application Variables
-          yq -i "(.components[] | select(.name == \"argocd-ttyd\")).environment.ARGOCD_PASS |= \"${{ secrets.bunnyshell_preview_password }}\"" bunnyshell_wf_updated.yaml
+          yq -i "(.components[] | select(.name == \"argocd-ttyd\")).environment.ARGOCD_PASS |= \"bns_secret(${{ secrets.bunnyshell_preview_password }})\"" bunnyshell_wf_updated.yaml
        
           # set outputs
           echo "contents=$(cat bunnyshell_wf_updated.yaml)" >> "$GITHUB_OUTPUT"

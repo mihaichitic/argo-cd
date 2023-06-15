@@ -1,6 +1,5 @@
-ARG ARGOCD_IMAGE=quay.io/argoproj/argocd
-ARG ARGOCD_TAG=latest
-FROM ${ARGOCD_IMAGE}:${ARGOCD_TAG} as argocd
+ARG ARGOCD_IMAGE=quay.io/argoproj/argocd:latest
+FROM ${ARGOCD_IMAGE} as argocd
 
 FROM bitnami/kubectl:latest
 
