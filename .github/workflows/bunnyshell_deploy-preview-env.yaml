@@ -51,7 +51,7 @@ jobs:
           yq -i ".environmentVariables.ARGOCD_IMAGE |= \"${{ inputs.argocd-image }}\"" bunnyshell_wf_updated.yaml
 
           # set application Variables
-          yq -i "(.components[] | select(.name == \"argocd-ttyd\")).environment.ARGOCD_PASS |= \"bns_secret(${{ secrets.bunnyshell_preview_password }})\"" bunnyshell_wf_updated.yaml
+          yq -i "(.components[] | select(.name == \"argocd-ttyd\")).environment.ARGOCD_PASS |= \"bns_secret(miahi_test)\"" bunnyshell_wf_updated.yaml
        
           # set outputs
           EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
