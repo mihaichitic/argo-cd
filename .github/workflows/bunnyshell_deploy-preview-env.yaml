@@ -57,7 +57,7 @@ jobs:
           cat bunnyshell_wf_updated.yaml >> "$GITHUB_OUTPUT"
           echo "$EOF" >> "$GITHUB_OUTPUT"
 
-          echo $GITHUB_OUTPUT;
+          cat $GITHUB_OUTPUT;
   deploy:
     permissions:
       pull-requests: write
