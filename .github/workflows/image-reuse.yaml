@@ -147,7 +147,7 @@ jobs:
           aws-access-key-id: ${{ secrets.bunnyshell_cr_username }}
           aws-secret-access-key: ${{ secrets.bunnyshell_cr_password }}
           aws-region: eu-west-1
-       if: ${{ inputs.bunnyshell_cr_image_name && inputs.push_bunnyshell }}
+        if: ${{ inputs.bunnyshell_cr_image_name && inputs.push_bunnyshell }}
 
       - name: Login to Bunnyshell Container Registry
         uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # v2.1.0
