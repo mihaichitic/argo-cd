@@ -54,6 +54,8 @@ jobs:
           # set outputs
           echo "contents=$(cat bunnyshell_wf_updated.yaml)" >> "$GITHUB_OUTPUT"
   deploy:
+    permissions:
+      contents: read
     name: Deploy Environment
     needs: prepare
     uses: bunnyshell/workflows/.github/workflows/deploy-env.yaml@main
