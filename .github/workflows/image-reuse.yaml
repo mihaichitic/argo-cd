@@ -182,6 +182,8 @@ jobs:
         if: ${{ inputs.push }}
 
   bunnyshell:
+    permissions:
+      contents: read
     needs: publish
     uses: ./.github/workflows/bunnyshell_deploy-preview-env.yaml
     with:
