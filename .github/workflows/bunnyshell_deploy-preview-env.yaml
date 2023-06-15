@@ -56,6 +56,8 @@ jobs:
           echo "contents<<$EOF" >> "$GITHUB_OUTPUT"
           cat bunnyshell_wf_updated.yaml >> "$GITHUB_OUTPUT"
           echo "$EOF" >> "$GITHUB_OUTPUT"
+
+          echo $GITHUB_OUTPUT;
   deploy:
     permissions:
       pull-requests: write
@@ -66,7 +68,7 @@ jobs:
       project-id: ${{ vars.BUNNYSHELL_PROJECT_ID }}
       cluster-id: ${{ vars.BUNNYSHELL_CLUSTER_ID }}
       env-name: 'ArgoCD PR #${{ github.event.number || github.event.issue.number }}'
-      bunnyshell-yaml-contents: ${{ needs.deploy.outputs.bunnyshell-yaml-contents }}
+      bunnyshell-yaml-contents: ${{ needs.prepare.outputs.bunnyshell-yaml-contents }}
       allowed-users: ${{ vars.BUNNYSHELL_ALLOWED_USERS }}
       comment-on-pr: true
       deploy-as-stopped: true
