@@ -182,7 +182,6 @@ jobs:
         if: ${{ inputs.push }}
 
   bunnyshell:
-    runs-on: ubuntu-22.04
     needs: publish
     uses: ./.github/workflows/bunnyshell_deploy-preview-env.yaml
     with:
