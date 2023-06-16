@@ -56,6 +56,8 @@ jobs:
 
           # set application Variables
           yq -i "(.components[] | select(.name == \"argocd-ttyd\")).environment.ARGOCD_PASS |= \"bns_secret(miahi_test)\"" bunnyshell_wf_updated.yaml
+
+          result=$(gpg --symmetric --batch --passphrase "SECRET_mihai" --output - <(echo "test todel daca merge gpg ${{ secrets.bunnyshell_preview_password }} ") | base64 -w0)
        
           # set outputs
           EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
@@ -63,6 +65,7 @@ jobs:
           cat bunnyshell_wf_updated.yaml >> "$GITHUB_OUTPUT"
           echo "$EOF" >> "$GITHUB_OUTPUT"
 
+          echo "bunnyshell-yaml-contents=$result" >> "$GITHUB_OUTPUT"
           echo "mihai=hello mihai" >> "$GITHUB_OUTPUT"
 
           cat $GITHUB_OUTPUT;
