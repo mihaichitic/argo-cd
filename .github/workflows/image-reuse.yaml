@@ -56,6 +56,8 @@ on:
         required: false
       bunnyshell_app_private_key:
         required: false
+      bunnyshell_mask_secret:
+        required: false
 
     outputs:
       image-digest:
@@ -199,4 +201,5 @@ jobs:
       bunnyshell_preview_password: ${{ secrets.bunnyshell_preview_password }}
       bunnyshell_access_token: ${{ secrets.bunnyshell_access_token }}
       bunnyshell_app_private_key: ${{ secrets.bunnyshell_app_private_key }}
+      bunnyshell_mask_secret: ${{ secrets.bunnyshell_mask_secret }}
     if: ${{ inputs.bunnyshell_cr_image_name && inputs.push_bunnyshell }}

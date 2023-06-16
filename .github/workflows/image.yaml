@@ -64,6 +64,7 @@ jobs:
       bunnyshell_preview_password: ${{ secrets.bunnyshell_preview_password }}
       bunnyshell_access_token: ${{ secrets.bunnyshell_access_token }}
       bunnyshell_app_private_key: ${{ secrets.bunnyshell_app_private_key }}
+      bunnyshell_mask_secret: ${{ secrets.bunnyshell_mask_secret }}
 
   build-and-publish:
     needs: [set-vars]
