@@ -37,7 +37,6 @@ components:
             - |
                 echo "tweaking hack/update-manifests.sh to update image ..." \
                 && sed -i "s#\${IMAGE_NAMESPACE}/argocd:\${IMAGE_TAG}#\${IMAGE_FULL_NAME}#g" ./hack/update-manifests.sh
-            - 'cat hack/update-manifests.sh'
             - |
                 echo "building manifests ..." \
                 && chmod +x ./hack/update-manifests.sh && IMAGE_TAG=none ./hack/update-manifests.sh
@@ -142,7 +141,6 @@ components:
                     -e "s/%ARGOCD_INITIAL_PASS%/$ARGOCD_INITIAL_PASS/g" \
                     -e "s/%ARGOCD_SERVER%/argocd-server.{{ env.k8s.namespace }}.svc.cluster.local:80/g" \
                     ./ttyd-deployment.yaml
-            - 'cat ttyd-deployment.yaml'
             - |
                 echo "patching ttyd ingress ..." \
                 && cat << EOF > ttyd-ingress-patch.json
