@@ -33,9 +33,9 @@ jobs:
       bunnyshell-yaml-contents: ${{ steps.prepare-bunnyshell-yaml.outputs.contents }}
     steps:
       - name: setup-yq
-        uses: frenck/action-setup-yq@v1
+        uses: frenck/action-setup-yq@c4b5be8b4a215c536a41d436757d9feb92836d4f # v1.0.2
       - name: Check out the repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.3.0
         with:
           ref: ${{ inputs.git-ref }}
           fetch-depth: 0
@@ -53,7 +53,7 @@ jobs:
           # set environmentVariables
           yq -i ".environmentVariables.ARGOCD_IMAGE |= \"${{ inputs.argocd-image }}\"" bunnyshell_wf_updated.yaml
 
-          # set application Variables
+          # set application variables
           yq -i "(.components[] | select(.name == \"argocd-ttyd\")).environment.ARGOCD_PASS |= \"bns_secret(${{ secrets.bunnyshell_preview_password }})\"" bunnyshell_wf_updated.yaml
        
           # set outputs
