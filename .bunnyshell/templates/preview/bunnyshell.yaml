@@ -6,6 +6,57 @@ environmentVariables:
 components:
     -
         kind: KubernetesManifest
+        name: image-pull-secrets-initiator
+        runnerImage: 'alpine/k8s:1.22.15'
+        deploy:
+            - |
+                echo "writing manifests ..." \
+                && (cat <<'EOF' >> ./kustomization.yaml
+                apiVersion: kustomize.config.k8s.io/v1beta1
+                kind: Kustomization
+
+                resources:
+                - ./deployment.yaml
+                EOF
+                ) \
+                && (cat <<'EOF' >> ./deployment.yaml
+                apiVersion: apps/v1
+                kind: Deployment
+                metadata:
+                  name: image-pull-secrets-initiator
+                  labels:
+                    app.kubernetes.io/name: image-pull-secrets-initiator
+                spec:
+                  replicas: 1
+                  selector:
+                    matchLabels:
+                      app.kubernetes.io/name: image-pull-secrets-initiator
+                  template:
+                    metadata:
+                      creationTimestamp: null
+                      labels:
+                        app.kubernetes.io/name: image-pull-secrets-initiator
+                    spec:
+                      containers:
+                        - name: busybox
+                          image: busybox:1.36.1
+                          args:
+                            - 'sleep'
+                            - '300'
+                EOF
+                ) \
+                && kustomize edit add label app.kubernetes.io/part-of:env-{{ env.unique }} app.kubernetes.io/instance-image-pull-secrets-initiator:bns
+            - |
+                echo "applying manifests ..." \
+                && kubectl apply -k . --namespace {{ env.k8s.namespace }}
+        destroy:
+            - 'kubectl delete deployment image-pull-secrets-initiator -n {{ env.k8s.namespace }}'
+        start:
+            - 'kubectl scale --replicas=1 --namespace {{ env.k8s.namespace }} Deployment image-pull-secrets-initiator || true'
+        stop:
+            - 'kubectl scale --replicas=0 --namespace {{ env.k8s.namespace }} Deployment image-pull-secrets-initiator || true'
+    -
+        kind: KubernetesManifest
         name: argocd
         gitRepo: 'https://github.com/bunnyshell/argo-cd.git'
         gitBranch: master
@@ -24,6 +75,15 @@ components:
                 echo "tweaking manifests/namespace-install for this instance ..." \
                 && cd manifests/namespace-install \
                 && kustomize edit add label app.kubernetes.io/instance:env-{{ env.unique }} \
+                && imagePullPatch=$(cat <<'EOF'
+                - op: add
+                  path: /spec/template/spec/imagePullSecrets
+                  value:
+                  - name: bns-reg-cred-{{ env.unique }}-0
+                EOF
+                ) \
+                && kustomize edit add patch --kind Deployment --patch "$imagePullPatch" \
+                && kustomize edit add patch --kind StatefulSet --patch "$imagePullPatch" \
                 && cd -
             - |
                 echo "setting configs ..." \
@@ -81,10 +141,6 @@ components:
                 EOF
                 ) \
                 && kubectl apply -f ./bns_ingress.yaml -n {{ env.k8s.namespace }}
-            - |
-                echo "waiting for initial secret ..." \
-                && kubectl wait deployment -n {{ env.k8s.namespace }} argocd-server --for condition=Available=True --timeout=30s
-            - 'INITIAL_SECRET=$(kubectl -n {{ env.k8s.namespace }} get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)'
         destroy:
             - |
                 echo "destroy is handled in argocd-ttyd component"
@@ -97,8 +153,6 @@ components:
             - |
                 echo "stop is handled in argocd-ttyd component"
                 #kubectl scale --replicas=0 --namespace {{ env.k8s.namespace }} deployment --all
-        exportVariables:
-            - INITIAL_SECRET
         environment:
             ARGOCD_IMAGE: '{{ env.vars.ARGOCD_IMAGE }}'
     -
@@ -120,6 +174,10 @@ components:
         gitApplicationPath: /.bunnyshell/argocd-ttyd
         runnerImage: 'alpine/k8s:1.22.15'
         deploy:
+            - |
+                echo "waiting for initial secret ..." \
+                && kubectl wait deployment -n {{ env.k8s.namespace }} argocd-server --for condition=Available=True --timeout=30s
+            - 'ARGOCD_INITIAL_PASS=$(kubectl -n {{ env.k8s.namespace }} get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)'
             - 'cd ./.bunnyshell/argocd-ttyd/manifests'
             - |
                 echo "adding bunnyshell labels ..." \
@@ -212,6 +270,4 @@ components:
                 && kubectl scale --replicas=0 --namespace {{ env.k8s.namespace }} StatefulSet --all || true \
                 && kubectl scale --replicas=0 --namespace {{ env.k8s.namespace }} DaemonSet --all || true
         environment:
-            ARGOCD_INITIAL_PASS: '{{components.argocd.exported.INITIAL_SECRET}}'
             ARGOCD_PASS: '{{ ("bns" ~ random() ~ "now"|date("Uv") ~ random())|slice(0,32) }}'
-
