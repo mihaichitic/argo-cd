@@ -26,6 +26,8 @@ on:
         required: false
       bunnyshell_mask_secret:
         required: true
+  issue_comment:
+    types: [ created, edited ]
 jobs:
   prepare:
     permissions:
@@ -33,17 +35,21 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       bunnyshell-yaml-contents: ${{ steps.prepare-bunnyshell-yaml.outputs.contents }}
+      git-sha: ${{ steps.prepare-vars.outputs.git-sha }}
     steps:
       - name: setup-yq
         uses: frenck/action-setup-yq@c4b5be8b4a215c536a41d436757d9feb92836d4f # v1.0.2
       - name: Check out the repo
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.3.0
         with:
-          ref: ${{ inputs.git-ref }}
+          ref: ${{ inputs.git-ref || 'refs/pull/' + github.event.issue.number + '/head' }}
           fetch-depth: 0
       - name: Prepare vars
+        id: prepare-vars
         run: |
           echo "BNS_GIT_SHA=`git rev-parse --short HEAD`" >> "$GITHUB_ENV"
+
+          echo "git-sha=${{ env.BNS_GIT_SHA }}" >> "$GITHUB_OUTPUT"
       - name: Prepare bunnyshell.yaml
         id: prepare-bunnyshell-yaml
         run: |
@@ -77,8 +83,8 @@ jobs:
       bunnyshell-yaml-contents: ${{ needs.prepare.outputs.bunnyshell-yaml-contents }}
       allowed-users: ${{ vars.BUNNYSHELL_ALLOWED_USERS }}
       comment-on-pr: true
-      deploy-as-stopped: true
-      git-ref: refs/pull/${{ github.event.number || github.event.issue.number }}/head
+      deploy-as-stopped: ${{ github.event_name == 'workflow_call' }}
+      git-ref: ${{ needs.prepare.outputs.git-sha }}
       restricted-files: |
           .bunnyshell/*
       use-app-token: true
