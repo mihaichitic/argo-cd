@@ -42,7 +42,7 @@ jobs:
       - name: determine-git-ref
         id: determine-git-ref
         run: |
-          $gitRef="${{ inputs.git-ref || format('refs/pull/{0}/head', github.event.issue.number) }}"
+          gitRef="${{ inputs.git-ref || format('refs/pull/{0}/head', github.event.issue.number) }}"
 
           echo "git-ref=$gitRef" >> "$GITHUB_OUTPUT"
       - name: Check out the repo
