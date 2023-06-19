@@ -45,6 +45,20 @@ jobs:
           gitRef="${{ inputs.git-ref || format('refs/pull/{0}/head', github.event.issue.number) }}"
 
           echo "git-ref=$gitRef" >> "$GITHUB_OUTPUT"
+      - name: Compute artifacts names
+        run: |
+          artifactName="argocd-image-${{ github.event.number || github.event.issue.number }}.txt"
+          echo "artifactName=$artifactName" >> "$GITHUB_ENV"
+      - name: Write artifacts
+        if: ${{ inputs.argocd-image }}
+        run: |
+          echo "${{ inputs.argocd-image }}" > ${{ env.artifactName }}
+      - name: Upload artifacts
+        if: ${{ inputs.argocd-image }}
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce #v3.1.2
+        with:
+          name: ${{ env.artifactName }}
+          path: ${{ env.artifactName }}
       - name: Check out the repo
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.3.0
         with:
@@ -53,12 +67,16 @@ jobs:
       - name: Prepare vars
         id: prepare-vars
         run: |
-          BNS_GIT_SHA=`git rev-parse --short HEAD`
-
-          echo "BNS_GIT_SHA=$BNS_GIT_SHA" >> "$GITHUB_ENV"
+          echo "BNS_GIT_SHA=`git rev-parse --short HEAD`" >> "$GITHUB_ENV"
 
           echo "BNS_BUNNYSHELL_YAML_PATH=${{ inputs.bunnyshell-yaml-path || '.bunnyshell/templates/preview/bunnyshell.yaml' }}" >> "$GITHUB_ENV"
-          echo "BNS_ARGOCD_IMAGE=${{ inputs.argocd-image || 'quay.io/argoproj/argocd:latest' }}" >> "$GITHUB_ENV" #todo: get it from artifacts
+
+          if [ "${{ inputs.argocd-image }}" == "" ]; then
+            artifactArgocdImage="quay.io/argoproj/argocd:latest" #todo: download from artifacts
+
+            #todo: exit if no artifact, cannot continue
+          end
+          echo "BNS_ARGOCD_IMAGE=${{ inputs.argocd-image || $artifactArgocdImage }}" >> "$GITHUB_ENV"
       - name: Prepare bunnyshell.yaml
         id: prepare-bunnyshell-yaml
         run: |
