@@ -238,8 +238,11 @@ components:
                 done
             - |
                 echo "deleting argocd related resources ..." \
-                && kubectl delete "$(kubectl api-resources --namespaced=true --verbs=delete -o name | tr "\n" "," | sed -e 's/,$//')" -l app.kubernetes.io/instance=env-{{ env.unique }} --ignore-not-found=true --now=true --wait=true \
+                && kubectl delete "$(kubectl api-resources --namespaced=true --verbs=delete -o name --sort-by=kind | tr "\n" "," | sed -e 's/,$//')" -l app.kubernetes.io/instance=env-{{ env.unique }} --ignore-not-found=true --now=true --wait=true \
                 && kubectl delete "$(kubectl api-resources --namespaced=false --verbs=delete -o name | tr "\n" "," | sed -e 's/,$//')" -l app.kubernetes.io/instance=env-{{ env.unique }} --ignore-not-found=true --wait=false
+            - |
+                echo "deleting argocd-ttyd resources ..." \
+                && kubectl delete "$(kubectl api-resources --namespaced=true --verbs=delete -o name | tr "\n" "," | sed -e 's/,$//')" -l "app.kubernetes.io/instance-argocd-ttyd=bns,app.kubernetes.io/part-of=env-{{ env.unique }}" --ignore-not-found=true --now=true --wait=true
         start:
             - |
                 echo "starting argocd instance ..." \
