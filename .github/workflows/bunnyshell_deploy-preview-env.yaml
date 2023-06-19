@@ -51,7 +51,7 @@ jobs:
 
           echo "BNS_GIT_SHA=$BNS_GIT_SHA" >> "$GITHUB_ENV"
 
-          echo "BNS_BUNNYSHELL_YAML_PATH=${{ inputs.bunnyshell-yaml-path || 'bunnyshell/templates/preview/bunnyshell.yaml' }}" >> "$GITHUB_ENV"
+          echo "BNS_BUNNYSHELL_YAML_PATH=${{ inputs.bunnyshell-yaml-path || '.bunnyshell/templates/preview/bunnyshell.yaml' }}" >> "$GITHUB_ENV"
           echo "BNS_ARGOCD_IMAGE=${{ inputs.argocd-image || 'quay.io/argoproj/argocd:latest' }}" >> "$GITHUB_ENV" #todo: get it from artifacts
 
           echo "git-sha=$BNS_GIT_SHA" >> "$GITHUB_OUTPUT"
