@@ -35,10 +35,16 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       bunnyshell-yaml-contents: ${{ steps.prepare-bunnyshell-yaml.outputs.contents }}
-      git-sha: ${{ steps.prepare-vars.outputs.git-sha }}
+      git-ref: ${{ steps.determine-git-ref.outputs.git-ref }}
     steps:
       - name: setup-yq
         uses: frenck/action-setup-yq@c4b5be8b4a215c536a41d436757d9feb92836d4f # v1.0.2
+      - name: determine-git-ref
+        id: determine-git-ref
+        run: |
+          $gitRef= ${{ inputs.git-ref || format('refs/pull/{0}/head', github.event.issue.number) }}
+
+          echo "git-ref=$gitRef" >> "$GITHUB_OUTPUT"
       - name: Check out the repo
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.3.0
         with:
@@ -53,8 +59,6 @@ jobs:
 
           echo "BNS_BUNNYSHELL_YAML_PATH=${{ inputs.bunnyshell-yaml-path || '.bunnyshell/templates/preview/bunnyshell.yaml' }}" >> "$GITHUB_ENV"
           echo "BNS_ARGOCD_IMAGE=${{ inputs.argocd-image || 'quay.io/argoproj/argocd:latest' }}" >> "$GITHUB_ENV" #todo: get it from artifacts
-
-          echo "git-sha=$BNS_GIT_SHA" >> "$GITHUB_OUTPUT"
       - name: Prepare bunnyshell.yaml
         id: prepare-bunnyshell-yaml
         run: |
@@ -89,7 +93,7 @@ jobs:
       allowed-users: ${{ vars.BUNNYSHELL_ALLOWED_USERS }}
       comment-on-pr: true
       deploy-as-stopped: ${{ github.event_name == 'workflow_call' }}
-      git-ref: ${{ needs.prepare.outputs.git-sha }}
+      git-ref: ${{ needs.prepare.outputs.git-ref }}
       restricted-files: |
           .bunnyshell/*
       use-app-token: true
