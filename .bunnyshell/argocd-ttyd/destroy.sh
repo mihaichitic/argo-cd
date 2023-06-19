@@ -5,12 +5,12 @@ script_dir=$(dirname "$0")
 "$script_dir/login.sh"
 
 # Fetch the list of application names
-echo 'fetching apps ...'
+echo "fetching apps ..."
 app_list=$(argocd app list -o name)
 
 # Loop through each application and delete it
 for app_name in $app_list; do
-  echo 'deleting $app_name ...'
+  echo "deleting $app_name ..."
   argocd app delete "$(basename "$app_name")" --cascade
 done
 
