@@ -80,8 +80,11 @@ jobs:
               echo "No argocd-image to use, neither in inputs nor in artifacts."
               exit 1
             fi
+
+            echo "BNS_ARGOCD_IMAGE=$artifactArgocdImage" >> "$GITHUB_ENV"
+          else
+            echo "BNS_ARGOCD_IMAGE=${{ inputs.argocd-image }}" >> "$GITHUB_ENV"
           end
-          echo "BNS_ARGOCD_IMAGE=${{ inputs.argocd-image || artifactArgocdImage }}" >> "$GITHUB_ENV"
       - name: Prepare bunnyshell.yaml
         id: prepare-bunnyshell-yaml
         run: |
