@@ -47,7 +47,9 @@ jobs:
       - name: Prepare vars
         id: prepare-vars
         run: |
-          echo "BNS_GIT_SHA=`git rev-parse --short HEAD`" >> "$GITHUB_ENV"
+          BNS_GIT_SHA=`git rev-parse --short HEAD`
+
+          echo "BNS_GIT_SHA=$BNS_GIT_SHA" >> "$GITHUB_ENV"
 
           echo "git-sha=$BNS_GIT_SHA" >> "$GITHUB_OUTPUT"
       - name: Prepare bunnyshell.yaml
