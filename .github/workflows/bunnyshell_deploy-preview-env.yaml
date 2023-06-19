@@ -49,7 +49,7 @@ jobs:
         run: |
           echo "BNS_GIT_SHA=`git rev-parse --short HEAD`" >> "$GITHUB_ENV"
 
-          echo "git-sha=${{ env.BNS_GIT_SHA }}" >> "$GITHUB_OUTPUT"
+          echo "git-sha=${{ BNS_GIT_SHA }}" >> "$GITHUB_OUTPUT"
       - name: Prepare bunnyshell.yaml
         id: prepare-bunnyshell-yaml
         run: |
