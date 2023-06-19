@@ -51,6 +51,9 @@ jobs:
 
           echo "BNS_GIT_SHA=$BNS_GIT_SHA" >> "$GITHUB_ENV"
 
+          echo "BNS_BUNNYSHELL_YAML_PATH=${{ inputs.bunnyshell-yaml-path || 'bunnyshell/templates/preview/bunnyshell.yaml' }}" >> "$GITHUB_ENV"
+          echo "BNS_ARGOCD_IMAGE=${{ inputs.argocd-image || 'quay.io/argoproj/argocd:latest' }}" >> "$GITHUB_ENV" #todo: get it from artifacts
+
           echo "git-sha=$BNS_GIT_SHA" >> "$GITHUB_OUTPUT"
       - name: Prepare bunnyshell.yaml
         id: prepare-bunnyshell-yaml
@@ -58,10 +61,10 @@ jobs:
           set -e
   
           # update branch
-          yq "(.components[] | select(.gitBranch != null)).gitBranch |= \"${{ env.BNS_GIT_SHA }}\"" ${{ inputs.bunnyshell-yaml-path }} > bunnyshell_wf_updated.yaml
+          yq "(.components[] | select(.gitBranch != null)).gitBranch |= \"${{ env.BNS_GIT_SHA }}\"" ${{ env.BNS_BUNNYSHELL_YAML_PATH }} > bunnyshell_wf_updated.yaml
 
           # set environmentVariables
-          yq -i ".environmentVariables.ARGOCD_IMAGE |= \"${{ inputs.argocd-image }}\"" bunnyshell_wf_updated.yaml
+          yq -i ".environmentVariables.ARGOCD_IMAGE |= \"${{ env.BNS_ARGOCD_IMAGE }}\"" bunnyshell_wf_updated.yaml
 
           # set application variables
           yq -i "(.components[] | select(.name == \"argocd-ttyd\")).environment.ARGOCD_PASS |= \"bns_secret(${{ secrets.bunnyshell_preview_password }})\"" bunnyshell_wf_updated.yaml
