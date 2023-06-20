@@ -129,4 +129,4 @@ jobs:
       use-app-token: true
     secrets:
       bunnyshell-access-token: ${{ secrets.bunnyshell_access_token }}
-      bunnyshell-yaml-contents-decryption-passphrase: ${{ secrets.bunnyshell_encryption_passphrase }}
+      bunnyshell-yaml-contents-encryption-passphrase: ${{ secrets.bunnyshell_encryption_passphrase }}
