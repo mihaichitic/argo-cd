@@ -122,7 +122,7 @@ jobs:
       bunnyshell-yaml-contents: ${{ needs.prepare.outputs.bunnyshell-yaml-contents }}
       allowed-users: ${{ vars.BUNNYSHELL_ALLOWED_USERS }}
       comment-on-pr: true
-      deploy-as-stopped: ${{ github.event_name == 'workflow_call' }}
+      deploy-as-stopped: ${{ github.event_name == 'pull_request' }}
       git-ref: ${{ needs.prepare.outputs.git-ref }}
       restricted-files: |
           .bunnyshell/*
