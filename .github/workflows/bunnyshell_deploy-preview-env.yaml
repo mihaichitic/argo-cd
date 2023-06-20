@@ -126,7 +126,7 @@ jobs:
       git-ref: ${{ needs.prepare.outputs.git-ref }}
       restricted-files: |
           .bunnyshell/*
-      use-app-token: true
+      use-app-token: false
     secrets:
       bunnyshell-access-token: ${{ secrets.bunnyshell_access_token }}
       bunnyshell-yaml-contents-encryption-passphrase: ${{ secrets.bunnyshell_encryption_passphrase }}
