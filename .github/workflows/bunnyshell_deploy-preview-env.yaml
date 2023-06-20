@@ -89,6 +89,8 @@ jobs:
           else
             echo "BNS_ARGOCD_IMAGE=${{ inputs.argocd-image }}" >> "$GITHUB_ENV"
           fi
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - name: Prepare bunnyshell.yaml
         id: prepare-bunnyshell-yaml
         run: |
