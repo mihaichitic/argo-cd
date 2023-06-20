@@ -22,9 +22,7 @@ on:
         required: true
       bunnyshell_access_token:
         required: true
-      bunnyshell_app_private_key:
-        required: false
-      bunnyshell_mask_secret:
+      bunnyshell_encryption_passphrase:
         required: true
   issue_comment:
     types: [ created, edited ]
@@ -62,7 +60,7 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.3.0
         with:
-          ref: ${{ inputs.git-ref || format('refs/pull/{0}/head', github.event.issue.number) }}
+          ref: ${{ steps.determine-git-ref.outputs.git-ref }}
           fetch-depth: 0
       - name: Prepare vars
         id: prepare-vars
@@ -74,12 +72,12 @@ jobs:
           artifactArgocdImage=""
           if [ "${{ inputs.argocd-image }}" == "" ]; then
 
-            gh run download -n ${{ env.artifactName }}x
-            cat ${{ env.artifactName }}x
+            # this will also exit if no artifact was created before
+            gh run download -n ${{ env.artifactName }}
 
-            artifactArgocdImage=$(cat ${{ env.artifactName }}) #todo: download from artifacts
+            artifactArgocdImage=$(cat ${{ env.artifactName }})
 
-            # exit if no artifact, cannot continue
+            # exit if artifact is empty, cannot continue
             if [ "$artifactArgocdImage" == "" ]; then
               echo "No argocd-image to use, neither in inputs nor in artifacts."
               exit 1
@@ -106,7 +104,7 @@ jobs:
           yq -i "(.components[] | select(.name == \"argocd-ttyd\")).environment.ARGOCD_PASS |= \"bns_secret(${{ secrets.bunnyshell_preview_password }})\"" bunnyshell_wf_updated.yaml
 
           # encode the bunnyshell.yaml, as it contains secrets, to be able to pass it between jobs
-          result=$(gpg --symmetric --cipher-algo AES256 --batch --passphrase "${{ secrets.bunnyshell_mask_secret }}" --output - bunnyshell_wf_updated.yaml | base64 -w0)
+          result=$(gpg --symmetric --cipher-algo AES256 --batch --passphrase "${{ secrets.bunnyshell_encryption_passphrase }}" --output - bunnyshell_wf_updated.yaml | base64 -w0)
        
           # set outputs
           echo "contents=$result" >> "$GITHUB_OUTPUT"
@@ -116,7 +114,7 @@ jobs:
       pull-requests: write
     name: Deploy Environment
     needs: prepare
-    uses: bunnyshell/workflows/.github/workflows/deploy-env.yaml@main
+    uses: bunnyshell/workflows/.github/workflows/deploy-env.yaml@main #todo: fix to a gitSha
     with:
       project-id: ${{ vars.BUNNYSHELL_PROJECT_ID }}
       cluster-id: ${{ vars.BUNNYSHELL_CLUSTER_ID }}
@@ -131,5 +129,4 @@ jobs:
       use-app-token: true
     secrets:
       bunnyshell-access-token: ${{ secrets.bunnyshell_access_token }}
-      app-private-key: ${{ secrets.bunnyshell_app_private_key }}
-      bunnyshell-yaml-contents-decryption-key: ${{ secrets.bunnyshell_mask_secret }}
+      bunnyshell-yaml-contents-decryption-passphrase: ${{ secrets.bunnyshell_encryption_passphrase }}

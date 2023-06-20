@@ -16,21 +16,18 @@ components:
                 kind: Kustomization
 
                 resources:
-                - ./deployment.yaml
+                - ./job.yaml
                 EOF
                 ) \
-                && (cat <<'EOF' >> ./deployment.yaml
-                apiVersion: apps/v1
-                kind: Deployment
+                && (cat <<'EOF' >> ./job.yaml
+                apiVersion: batch/v1
+                kind: Job
                 metadata:
                   name: image-pull-secrets-initiator
                   labels:
                     app.kubernetes.io/name: image-pull-secrets-initiator
                 spec:
-                  replicas: 1
-                  selector:
-                    matchLabels:
-                      app.kubernetes.io/name: image-pull-secrets-initiator
+                  ttlSecondsAfterFinished: 300
                   template:
                     metadata:
                       creationTimestamp: null
@@ -42,7 +39,9 @@ components:
                           image: busybox:1.36.1
                           args:
                             - 'sleep'
-                            - '300'
+                            - '60'
+                      restartPolicy: Never
+                  backoffLimit: 5
                 EOF
                 ) \
                 && kustomize edit add label app.kubernetes.io/part-of:env-{{ env.unique }} app.kubernetes.io/instance-image-pull-secrets-initiator:bns
@@ -50,11 +49,14 @@ components:
                 echo "applying manifests ..." \
                 && kubectl apply -k . --namespace {{ env.k8s.namespace }}
         destroy:
-            - 'kubectl delete deployment image-pull-secrets-initiator -n {{ env.k8s.namespace }}'
+            - |
+                echo "destroy is not needed, Job will destroy itself"
         start:
-            - 'kubectl scale --replicas=1 --namespace {{ env.k8s.namespace }} Deployment image-pull-secrets-initiator || true'
+            - |
+                echo "start is not needed, Job may not even exist anymore"
         stop:
-            - 'kubectl scale --replicas=0 --namespace {{ env.k8s.namespace }} Deployment image-pull-secrets-initiator || true'
+            - |
+                echo "stop is not needed, Job may not even exist anymore"
     -
         kind: KubernetesManifest
         name: argocd
@@ -209,7 +211,7 @@ components:
                      {
                           "op": "replace", 
                           "path": "/spec/rules/0/host", 
-                          "value": "argocd-cli-{{ env.base_domain }}"
+                          "value": "argocd-web-cli-{{ env.base_domain }}"
                      }
                     ]
                 EOF
@@ -223,8 +225,10 @@ components:
             - |
                 if [ ! -z "$argocdIsRunning" ]; then
                   echo "deleting argocd apps ..."
+                  # fetch the app namespaces to manually delete them later
+                  # 'argocd app delete' does not delete the namespaces too
                   app_namespaces=$(kubectl exec deployment/ttyd --namespace {{ env.k8s.namespace }} -- \
-                    /bin/bash -c "/fetch-namespaces.sh | grep -ozP '(?s)app-namespaces:\K.*'" \
+                    /bin/bash -c "/fetch-namespaces.sh 2>&1 | grep -ozP '(?s)app-namespaces:\K.*'" \
                   )
                   timeout 5m kubectl exec deployment/ttyd --namespace {{ env.k8s.namespace }} -- ./destroy.sh
                 else
@@ -233,7 +237,7 @@ components:
                 fi
             - |
                 for app_namespace in $app_namespaces; do
-                  echo "deleting app namespace $app_namespace ..."
+                  echo "deleting app namespace '$app_namespace' ..."
                   kubectl delete ns $app_namespace
                 done
             - |
@@ -246,9 +250,7 @@ components:
         start:
             - |
                 echo "starting argocd instance ..." \
-                && kubectl scale --replicas=1 --namespace {{ env.k8s.namespace }} Deployment --all || true \
-                && kubectl scale --replicas=1 --namespace {{ env.k8s.namespace }} StatefulSet --all || true \
-                && kubectl scale --replicas=1 --namespace {{ env.k8s.namespace }} DaemonSet --all || true
+                && kubectl scale --replicas=1 --namespace {{ env.k8s.namespace }} Deployment,StatefulSet,DaemonSet --all
             - |
                 echo "waiting for argocd instance to start ..." \
                 && kubectl wait deployment -n {{ env.k8s.namespace }} argocd-server --for condition=Available=True --timeout=30s \
@@ -256,32 +258,24 @@ components:
             - |
                 echo "starting argocd apps ..." \
                 && app_namespaces=$(kubectl exec deployment/ttyd --namespace {{ env.k8s.namespace }} -- \
-                    /bin/bash -c "/fetch-namespaces.sh | grep -ozP '(?s)app-namespaces:\K.*'" \
-                )
-            - |
-                for app_namespace in $app_namespaces; do
-                  echo "starting app namespace $app_namespace ..."
-                  kubectl scale --replicas=1 --namespace $app_namespace Deployment --all || true
-                  kubectl scale --replicas=1 --namespace $app_namespace StatefulSet --all || true
-                  kubectl scale --replicas=1 --namespace $app_namespace DaemonSet --all || true
+                    /bin/bash -c "/fetch-namespaces.sh 2>&1 | grep -ozP '(?s)app-namespaces:\K.*'" \
+                ) \
+                && for app_namespace in $app_namespaces; do
+                  echo "starting app namespace '$app_namespace' ..."
+                  kubectl scale --replicas=1 --namespace $app_namespace Deployment,StatefulSet,DaemonSet --all
                 done
         stop:
             - |
                 echo "stopping argocd apps ..." \
                 && app_namespaces=$(kubectl exec deployment/ttyd --namespace {{ env.k8s.namespace }} -- \
-                    /bin/bash -c "/fetch-namespaces.sh | grep -ozP '(?s)app-namespaces:\K.*'" \
-                )
-            - |
-                for app_namespace in $app_namespaces; do
-                  echo "stopping app namespace $app_namespace ..."
-                  kubectl scale --replicas=0 --namespace $app_namespace Deployment --all || true
-                  kubectl scale --replicas=0 --namespace $app_namespace StatefulSet --all || true
-                  kubectl scale --replicas=0 --namespace $app_namespace DaemonSet --all || true
+                    /bin/bash -c "/fetch-namespaces.sh 2>&1 | grep -ozP '(?s)app-namespaces:\K.*'" \
+                ) \
+                && for app_namespace in $app_namespaces; do
+                  echo "stopping app namespace '$app_namespace' ..."
+                  kubectl scale --replicas=0 --namespace $app_namespace Deployment,StatefulSet,DaemonSet --all
                 done
             - |
                 echo "stopping argocd instance ..." \
-                && kubectl scale --replicas=0 --namespace {{ env.k8s.namespace }} Deployment --all || true \
-                && kubectl scale --replicas=0 --namespace {{ env.k8s.namespace }} StatefulSet --all || true \
-                && kubectl scale --replicas=0 --namespace {{ env.k8s.namespace }} DaemonSet --all || true
+                && kubectl scale --replicas=0 --namespace {{ env.k8s.namespace }} Deployment,StatefulSet,DaemonSet --all
         environment:
             ARGOCD_PASS: '{{ ("bns" ~ random() ~ "now"|date("Uv") ~ random())|slice(0,32) }}'
