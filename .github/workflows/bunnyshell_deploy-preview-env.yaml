@@ -73,6 +73,10 @@ jobs:
 
           artifactArgocdImage=""
           if [ "${{ inputs.argocd-image }}" == "" ]; then
+
+            gh run download -n ${{ env.artifactName }}
+            cat ${{ env.artifactName }}
+
             artifactArgocdImage="quay.io/argoproj/argocd:latest" #todo: download from artifacts
 
             # exit if no artifact, cannot continue
