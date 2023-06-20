@@ -13,4 +13,3 @@ jobs:
       include-not-found: true
     secrets:
       bunnyshell-access-token: ${{ secrets.BUNNYSHELL_ACCESS_TOKEN }}
-
