@@ -10,7 +10,7 @@ app_list=$(argocd app list -o name)
 
 # Loop through each application and delete it
 for app_name in $app_list; do
-  echo "deleting $app_name ..."
+  echo "deleting '$app_name' ..."
   argocd app delete "$(basename "$app_name")" --cascade
 done
 
