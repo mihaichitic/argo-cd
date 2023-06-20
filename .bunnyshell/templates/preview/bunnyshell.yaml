@@ -262,7 +262,7 @@ components:
                 ) \
                 && for app_namespace in $app_namespaces; do
                   echo "starting app namespace '$app_namespace' ..."
-                  kubectl scale --replicas=1 --namespace $app_namespace Deployment,StatefulSet,DaemonSet --all
+                  kubectl scale --replicas=1 --namespace $app_namespace Deployment,StatefulSet,DaemonSet --all || true
                 done
         stop:
             - |
@@ -272,7 +272,7 @@ components:
                 ) \
                 && for app_namespace in $app_namespaces; do
                   echo "stopping app namespace '$app_namespace' ..."
-                  kubectl scale --replicas=0 --namespace $app_namespace Deployment,StatefulSet,DaemonSet --all
+                  kubectl scale --replicas=0 --namespace $app_namespace Deployment,StatefulSet,DaemonSet --all || true
                 done
             - |
                 echo "stopping argocd instance ..." \
