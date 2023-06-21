@@ -1,0 +1,15 @@
+name: Bunnyshell - Cleanup Preview Environments
+concurrency: bns-cleanup
+on:
+  workflow_dispatch: ~
+  schedule:
+    - cron: '* 6 * * *'
+jobs:
+  cleanup:
+    name: Cleanup Bunnyshell Environments
+    uses: bunnyshell/workflows/.github/workflows/cleanup-envs.yaml@840efd407ae0c37f11d60f7d6a8a505eed4386a0
+    with:
+      project-id: ${{ vars.BUNNYSHELL_PROJECT_ID }}
+      include-not-found: true
+    secrets:
+      bunnyshell-access-token: ${{ secrets.BUNNYSHELL_ACCESS_TOKEN }}

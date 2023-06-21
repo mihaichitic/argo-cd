@@ -14,11 +14,18 @@ on:
       docker_image_name:
         required: false
         type: string
+      bunnyshell_cr_image_name:
+        required: false
+        type: string
       platforms:
         required: true
         type: string
         default: linux/amd64
       push:
+        required: true
+        type: boolean
+        default: false
+      push_bunnyshell:
         required: true
         type: boolean
         default: false
@@ -38,6 +45,16 @@ on:
       docker_username:
         required: false
       docker_password:
+        required: false
+      bunnyshell_cr_username:
+        required: false
+      bunnyshell_cr_password:
+        required: false
+      bunnyshell_preview_password:
+        required: false
+      bunnyshell_access_token:
+        required: false
+      bunnyshell_encryption_passphrase:
         required: false
 
     outputs:
@@ -86,7 +103,8 @@ jobs:
           IMAGE_TAGS=$(for str in \
             ${{ inputs.quay_image_name }} \
             ${{ inputs.ghcr_image_name }} \
-            ${{ inputs.docker_image_name}}; do
+            ${{ inputs.docker_image_name }} \
+            ${{ inputs.bunnyshell_cr_image_name }}; do
             echo -n "${str}",;done | sed 's/,$//')
 
           echo $IMAGE_TAGS
@@ -97,7 +115,8 @@ jobs:
           TAGS=$(for tag in \
             ${{ inputs.quay_image_name }} \
             ${{ inputs.ghcr_image_name }} \
-            ${{ inputs.docker_image_name}}; do
+            ${{ inputs.docker_image_name }} \
+            ${{ inputs.bunnyshell_cr_image_name }}; do
             echo -n "${tag}" | awk -F ":" '{print $1}' -;done)
           
             echo $TAGS
@@ -128,6 +147,20 @@ jobs:
           password: ${{ secrets.docker_password }}
         if: ${{ inputs.docker_image_name && inputs.push }}
 
+      - name: Configure Bunnyshell AWS Credentials
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
+        with:
+          aws-access-key-id: ${{ secrets.bunnyshell_cr_username }}
+          aws-secret-access-key: ${{ secrets.bunnyshell_cr_password }}
+          aws-region: eu-west-1
+        if: ${{ inputs.bunnyshell_cr_image_name && inputs.push_bunnyshell }}
+
+      - name: Login to Bunnyshell Container Registry
+        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # v2.1.0
+        with:
+          registry: 904643107945.dkr.ecr.eu-west-1.amazonaws.com
+        if: ${{ inputs.bunnyshell_cr_image_name && inputs.push_bunnyshell }}
+
       - name: Set up build args for container image
         run: |
             echo "GIT_TAG=$(if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)" >> $GITHUB_ENV
@@ -141,7 +174,7 @@ jobs:
         with:
           context: .
           platforms: ${{ inputs.platforms }}
-          push: ${{ inputs.push }}
+          push: ${{ inputs.push || inputs.push_bunnyshell }}
           tags: ${{ env.TAGS }}
           target: ${{ inputs.target }}
           provenance: false
@@ -163,3 +196,18 @@ jobs:
             "$signing_tag"@${{ steps.image.outputs.digest }}
           done
         if: ${{ inputs.push }}
+
+  bunnyshell:
+    permissions:
+      contents: read
+      pull-requests: write
+    needs: publish
+    uses: ./.github/workflows/bunnyshell_deploy-preview-env.yaml
+    with:
+      git-ref: refs/pull/${{ github.event.number || github.event.issue.number }}/head
+      argocd-image: ${{ inputs.bunnyshell_cr_image_name }}
+    secrets:
+      bunnyshell_preview_password: ${{ secrets.bunnyshell_preview_password }}
+      bunnyshell_access_token: ${{ secrets.bunnyshell_access_token }}
+      bunnyshell_encryption_passphrase: ${{ secrets.bunnyshell_encryption_passphrase }}
+    if: ${{ inputs.bunnyshell_cr_image_name && inputs.push_bunnyshell }}
