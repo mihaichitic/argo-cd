@@ -10,7 +10,7 @@ on:
 jobs:
   start:
     name: Delete Environment
-    uses: bunnyshell/workflows/.github/workflows/delete-env.yaml@main
+    uses: bunnyshell/workflows/.github/workflows/delete-env.yaml@840efd407ae0c37f11d60f7d6a8a505eed4386a0 #todo bns: fix to a gitSha
     with:
       project-id: ${{ vars.BUNNYSHELL_PROJECT_ID }}
       env-name: 'ArgoCD PR #${{ github.event.issue.number }}'

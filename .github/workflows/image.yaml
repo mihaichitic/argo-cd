@@ -19,7 +19,7 @@ jobs:
   set-vars:
     permissions:
       contents: read
-    if: github.repository == 'bunnyshell/argo-cd' #todo todel: rollback to argoproj/argo-cd
+    if: github.repository == 'bunnyshell/argo-cd' #todo bns: rollback to argoproj/argo-cd
     runs-on: ubuntu-22.04
     outputs:
       image-tag: ${{ steps.image.outputs.tag}}
@@ -49,7 +49,7 @@ jobs:
       packages: write  # for pushing packages to GHCR, which is used by cd.apps.argoproj.io to avoid polluting Quay with tags
       id-token: write # for creating OIDC tokens for signing.
       pull-requests: write # for Bunnyshell preview environment
-    if: ${{ github.repository == 'bunnyshell/argo-cd' && github.event_name != 'push' }} #todo todel: rollback to argoproj/argo-cd
+    if: ${{ github.repository == 'bunnyshell/argo-cd' && github.event_name != 'push' }} #todo bns: rollback to argoproj/argo-cd
     uses: ./.github/workflows/image-reuse.yaml
     with:
       bunnyshell_cr_image_name: 904643107945.dkr.ecr.eu-west-1.amazonaws.com/bns-v4nq2e_argoproj-argocd:${{ needs.set-vars.outputs.image-tag }}
