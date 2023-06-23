@@ -60,7 +60,7 @@ components:
     -
         kind: KubernetesManifest
         name: argocd
-        gitRepo: 'https://github.com/bunnyshell/argo-cd.git'
+        gitRepo: 'https://github.com/bunnyshell/argo-cd.git' #todo bns: rollback to argoproj/argo-cd.git
         gitBranch: master
         gitApplicationPath: /
         runnerImage: 'alpine/k8s:1.22.15'
@@ -163,7 +163,7 @@ components:
     -
         kind: DockerImage
         name: argocd-ttyd-image
-        gitRepo: 'https://github.com/bunnyshell/argo-cd.git'
+        gitRepo: 'https://github.com/bunnyshell/argo-cd.git' #todo bns: rollback to argoproj/argo-cd.git
         gitBranch: master
         gitApplicationPath: /.bunnyshell/argocd-ttyd
         context: /.bunnyshell/argocd-ttyd
@@ -174,7 +174,7 @@ components:
     -
         kind: KubernetesManifest
         name: argocd-ttyd
-        gitRepo: 'https://github.com/bunnyshell/argo-cd.git'
+        gitRepo: 'https://github.com/bunnyshell/argo-cd.git' #todo bns: rollback to argoproj/argo-cd.git
         gitBranch: master
         gitApplicationPath: /.bunnyshell/argocd-ttyd
         runnerImage: 'alpine/k8s:1.22.15'
